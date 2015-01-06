@@ -1,22 +1,21 @@
-import httplib
-import md5
+import http.client as httpclient
+import hashlib
 import base64
-import binascii
 import json
 import collections
 import time
 
 
-class easyname:
-    HOST = "api.easyname.eu"
-    PORT = httplib.HTTPS_PORT
+class Easyname:
+    HOST = "api.selenium.eu"
+    PORT = httpclient.HTTPS_PORT
     
     __API_KEY_HEADER = "X-User-ApiKey"
     __AUTHENTICATION_HEADER = "X-User-Authentication"
     __DEFAULT_HEADER = {"Accept": "application/json"}
     
-    #http status codes: https://devblog.easyname.eu/api/request-response/
-    #api status codes: https://devblog.easyname.eu/wp-content/uploads/2012/09/api-statuscodes-errorcodes.pdf
+    #http status codes: https://devblog.selenium.eu/api/request-response/
+    #api status codes: https://devblog.selenium.eu/wp-content/uploads/2012/09/api-statuscodes-errorcodes.pdf
     
     @staticmethod
     def _value_string(value):
@@ -24,7 +23,7 @@ class easyname:
         return str(value)
     
     def __init__(self, user_id, email, api_key, authentication_salt, signature_salt):
-        self.__connection = httplib.HTTPSConnection(easyname.HOST, easyname.PORT)
+        self.__connection = httpclient.HTTPSConnection(Easyname.HOST, Easyname.PORT)
         self.__user_id = user_id
         self.__email = email
         self.__api_key = api_key
@@ -34,27 +33,25 @@ class easyname:
     
     def _calculate_authentication(self):
         auth_raw = self.__authentication_salt % (self.__user_id, self.__email)
-        auth_md5 = md5.new(auth_raw).digest()
-        auth_md5_hex = binascii.hexlify(auth_md5)
+        auth_md5_hex = hashlib.md5(auth_raw).hexdigest()
         auth = base64.b64encode(auth_md5_hex)
         return auth
     
     def _calculate_signature(self, data, timestamp):
         od = collections.OrderedDict(sorted(data.items() + [("timestamp", timestamp), ]))
-        values = "".join((easyname._value_string(value) for value in od.values()))
+        values = "".join((Easyname._value_string(value) for value in od.values()))
         center = len(values) - len(values) / 2
         signature_raw = values[0:center] + self.__signature_salt + values[center:]
-        signature_md5 = md5.new(signature_raw).digest()
-        signature_md5_hex = binascii.hexlify(signature_md5)
+        signature_md5_hex = hashlib.md5(signature_raw).hexdigest()
         signature = base64.b64encode(signature_md5_hex)
         return signature
     
     def request(self, method, path, data=None, timestamp=None):
         if timestamp == None: timestamp = int(time.time())
         
-        headers = dict(easyname.__DEFAULT_HEADER)
-        headers[easyname.__API_KEY_HEADER] = self.__api_key
-        headers[easyname.__AUTHENTICATION_HEADER] = self.__authentication
+        headers = dict(Easyname.__DEFAULT_HEADER)
+        headers[Easyname.__API_KEY_HEADER] = self.__api_key
+        headers[Easyname.__AUTHENTICATION_HEADER] = self.__authentication
         
         body = None
         if data != None:
@@ -68,15 +65,3 @@ class easyname:
         #TODO: check signature
         
         return rasponse_body, response.status, response.reason
-
-
-e = easyname(39249, "stefl.andreas@gmail.com", "nK19XEqSXOx2oU", "d31nt13%se8cu9x3%sJBy3od", "J4H9Uz990usSi3gL2d")
-
-r = e.request("GET", "/domain")[0]
-domain_id = r["data"][0]["id"]
-
-print e.request("GET", "/domain/%s" % domain_id)
-print e.request("GET", "/domain/%s/dns" % domain_id)
-
-data = {"name": "test", "type": "TXT", "content": "hallo welt", "ttl": 300}
-print e.request("POST", "/domain/%s/dns" % domain_id, data)
