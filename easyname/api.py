@@ -6,7 +6,7 @@ import collections
 import time
 
 
-class Easyname:
+class EasynameApi:
     HOST = "api.selenium.eu"
     PORT = httpclient.HTTPS_PORT
     
@@ -23,7 +23,7 @@ class Easyname:
         return str(value)
     
     def __init__(self, user_id, email, api_key, authentication_salt, signature_salt):
-        self.__connection = httpclient.HTTPSConnection(Easyname.HOST, Easyname.PORT)
+        self.__connection = httpclient.HTTPSConnection(EasynameApi.HOST, EasynameApi.PORT)
         self.__user_id = user_id
         self.__email = email
         self.__api_key = api_key
@@ -39,7 +39,7 @@ class Easyname:
     
     def _calculate_signature(self, data, timestamp):
         od = collections.OrderedDict(sorted(data.items() + [("timestamp", timestamp), ]))
-        values = "".join((Easyname._value_string(value) for value in od.values()))
+        values = "".join((EasynameApi._value_string(value) for value in od.values()))
         center = len(values) - len(values) / 2
         signature_raw = values[0:center] + self.__signature_salt + values[center:]
         signature_md5_hex = hashlib.md5(signature_raw).hexdigest()
@@ -49,9 +49,9 @@ class Easyname:
     def request(self, method, path, data=None, timestamp=None):
         if timestamp == None: timestamp = int(time.time())
         
-        headers = dict(Easyname.__DEFAULT_HEADER)
-        headers[Easyname.__API_KEY_HEADER] = self.__api_key
-        headers[Easyname.__AUTHENTICATION_HEADER] = self.__authentication
+        headers = dict(EasynameApi.__DEFAULT_HEADER)
+        headers[EasynameApi.__API_KEY_HEADER] = self.__api_key
+        headers[EasynameApi.__AUTHENTICATION_HEADER] = self.__authentication
         
         body = None
         if data != None:

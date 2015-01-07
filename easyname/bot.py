@@ -3,7 +3,7 @@ import urllib.parse as urlparse
 from selenium.webdriver.support.select import Select
 
 
-class Easyname:
+class EasynameBot:
     def __init__(self, webdriver):
         self.__driver = webdriver
     def auth(self, username, password):
@@ -70,22 +70,28 @@ class Easyname:
             result.append((dnsid, data[0], data[1], data[2], data[3], data[4]))
         return result
     def __clear_send_keys(self, element, string):
+        if not string: return
         element.clear()
         element.send_keys(string)
-    def __dns_fill(self, name, record, content, ttl, priority=""):
-        self.__clear_send_keys(self.__driver.find_element_by_name("name"), name)
-        Select(self.__driver.find_element_by_name("type")).select_by_value(record)
+    def __select(self, element, string):
+        if string: Select(element).select_by_value(string)
+    def __dns_fill(self, record, record_type, content, ttl, priority):
+        name = self.__driver.find_element_by_name("name")
+        suffix = name.find_element_by_xpath("..").text
+        if record.endswith(suffix): record = record[0:-len(suffix)]
+        self.__clear_send_keys(name, record)
+        self.__select(self.__driver.find_element_by_name("type"), record_type)
         self.__clear_send_keys(self.__driver.find_element_by_name("content"), content)
         self.__clear_send_keys(self.__driver.find_element_by_name("prio"), priority)
         self.__clear_send_keys(self.__driver.find_element_by_name("ttl"), ttl)
         self.__driver.find_element_by_name("commit").click()
-    def dns_add(self, domainid, name, record, content, ttl, priority=""):
+    def dns_add(self, domainid, record, record_type, content, ttl, priority):
         self.__driver.get("https://my.easyname.com/domains/settings/form.php?domain=%s" % domainid)
-        self.__dns_fill(name, record, content, ttl, priority)
-    def dns_remove(self, domainid, dnsid):
-        self.__driver.get("https://my.easyname.com/domains/settings/delete_record.php?domain=%s&id=%s&confirm=1" % (domainid, dnsid))
-    def dns_edit(self, domainid, dnsid, name, record, content, ttl, priority=""):
-        self.__driver.get("https://my.easyname.com/domains/settings/form.php?domain=%s&id=%s" % (domainid, dnsid))
-        self.__dns_fill(name, record, content, ttl, priority)
+        self.__dns_fill(record, record_type, content, ttl, priority)
+    def dns_remove(self, domainid, recordid):
+        self.__driver.get("https://my.easyname.com/domains/settings/delete_record.php?domain=%s&id=%s&confirm=1" % (domainid, recordid))
+    def dns_edit(self, domainid, recordid, record, record_type, content, ttl, priority):
+        self.__driver.get("https://my.easyname.com/domains/settings/form.php?domain=%s&id=%s" % (domainid, recordid))
+        self.__dns_fill(record, record_type, content, ttl, priority)
     def close(self):
         self.__driver.close()
