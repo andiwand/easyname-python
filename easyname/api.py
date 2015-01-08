@@ -5,7 +5,6 @@ import json
 import collections
 import time
 
-
 class EasynameApi:
     HOST = "api.selenium.eu"
     PORT = httpclient.HTTPS_PORT

@@ -3,13 +3,9 @@ import socketserver
 import http.server
 import urllib.parse as urlparse
 
-from selenium import webdriver
-from easyname.bot import EasynameBot
-
-
 class Server(socketserver.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, easyname, bind_and_activate=True):
-        socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
+    def __init__(self, server_address, easyname, bind_and_activate=True):
+        socketserver.TCPServer.__init__(self, server_address, Handler, bind_and_activate)
         self.__auth_users = []
         self.__auth_records = {}
         self.__easyname = easyname
@@ -17,10 +13,10 @@ class Server(socketserver.TCPServer):
         self.__record_ids = {}
         self.__init_easyname()
     def __init_easyname(self):
-        for domainid, domain in easyname.domains():
+        for domainid, domain in self.__easyname.domains():
             if not domainid or not domain: continue
             self.__domain_ids[domain] = domainid
-            for recordid, record, record_type, _, _, _ in easyname.dns_entries(domainid):
+            for recordid, record, record_type, _, _, _ in self.__easyname.dns_entries(domainid):
                 if not recordid or not record or not record_type: continue
                 if record_type not in ("A", "AAAA", "CNAME"): continue
                 self.__record_ids[record] = recordid
@@ -31,13 +27,15 @@ class Server(socketserver.TCPServer):
         return self.__record_ids.get(record, None)
     def add_user(self, username, password):
         self.__auth_users.append((username, password))
-    def add_record(self, username, domain):
+    def add_record(self, username, record):
         record_set = self.__auth_records.setdefault(username, set())
-        record_set.add(domain)
+        record_set.add(record)
     def auth_user(self, auth):
         return auth in self.__auth_users
-    def auth_record(self, username, domain):
-        return domain in self.__auth_records.get(username, set())
+    def auth_record(self, username, record):
+        return record in self.__auth_records.get(username, set())
+    def update(self, domainid, recordid, content):
+        self.__easyname.dns_edit(domainid, recordid, None, None, content, None, None)
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
@@ -80,15 +78,5 @@ class Handler(http.server.BaseHTTPRequestHandler):
         domainid = self.server.get_domainid(record)
         recordid = self.server.get_recordid(record)
         if not domainid or not recordid: return
-        self.dns_edit(domainid, recordid, None, None, content, None, None)
+        self.server.update(domainid, recordid, content)
         self.wfile.write(bytes("updated", "utf-8"))
-
-
-driver = webdriver.PhantomJS()
-easyname = EasynameBot(driver)
-easyname.auth("username", "password")
-
-server = Server(("", 8080), Handler, easyname)
-server.add_user("username", "password")
-server.add_record("username", "record")
-server.serve_forever()
