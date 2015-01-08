@@ -80,7 +80,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         domainid = self.server.get_domainid(record)
         recordid = self.server.get_recordid(record)
         if not domainid or not recordid: return
-        self.dns_edit(domainid, recordid, record, None, content, None, None)
+        self.dns_edit(domainid, recordid, None, None, content, None, None)
         self.wfile.write(bytes("updated", "utf-8"))
 
 

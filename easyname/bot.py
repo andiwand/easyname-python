@@ -78,7 +78,7 @@ class EasynameBot:
     def __dns_fill(self, record, record_type, content, ttl, priority):
         name = self.__driver.find_element_by_name("name")
         suffix = name.find_element_by_xpath("..").text
-        if record.endswith(suffix): record = record[0:-len(suffix)]
+        if not record.endswith(suffix): raise ValueError("invalid domain")
         self.__clear_send_keys(name, record)
         self.__select(self.__driver.find_element_by_name("type"), record_type)
         self.__clear_send_keys(self.__driver.find_element_by_name("content"), content)
