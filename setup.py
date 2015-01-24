@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name="easyname.py",
+    name="ezname",
     version="0.0.1",
-    url="https://github.com/andiwand/easyname.py",
+    url="https://github.com/andiwand/ezname",
     license="GNU Lesser General Public License",
     author="Andreas Stefl",
     install_requires=[],
@@ -11,6 +11,6 @@ setup(
     description="easyname domain api",
     long_description="",
     package_dir = {"": "src"},
-    packages=["easyname"],
+    packages=["ezname"],
     platforms="any",
 )
